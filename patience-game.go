@@ -20,7 +20,7 @@ var values [13]string = [13]string{"Ace", "Two", "Three", "Four", "Five", "Six",
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
-	numSimulations := 100000
+	numSimulations := 400000
 
 	deck := makeDeck()
 
@@ -57,6 +57,27 @@ func shuffledDeck(originalDeck []Card) []Card {
 }
 
 func playPatience(deck []Card) bool {
-	lastCard := deck[len(deck)-1]
-	return lastCard.Value == "King"
+	piles := make(map[string][]Card)
+	for i, value := range values {
+		piles[value] = deck[i*4: i*4 + 4]
+	}
+	
+	currentCard := removeBottomCard(piles, "King")
+	for len(piles[currentCard.Value]) > 0 {
+		currentCard = removeBottomCard(piles, currentCard.Value)
+	}
+	
+	remainingCards := 0
+	for _, pile := range piles {
+		remainingCards += len(pile)
+	}
+	
+	return remainingCards == 0
+}
+
+func removeBottomCard(piles map[string][]Card, value string) Card {
+	currentPile := piles[value]
+	lastCard := currentPile[len(currentPile) - 1]
+	piles[value] = currentPile[:len(currentPile) - 1]
+	return lastCard
 }
