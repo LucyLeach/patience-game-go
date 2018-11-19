@@ -23,18 +23,18 @@ func main() {
 	numSimulations := 100000
 
 	deck := makeDeck()
-	
-	valueCount := make(map[string]int)
+
+	winCount := 0
 	for i := 0; i < numSimulations; i++ {
 		shuffled := shuffledDeck(deck)
-		lastCard := shuffled[len(shuffled) - 1]
-		valueCount[lastCard.Value] = valueCount[lastCard.Value] + 1
+		win := playPatience(shuffled)
+		if win {
+			winCount++
+		}
 	}
-	
-	for _, value := range values {
-		fractionAppeared := float64(valueCount[value]) / float64(numSimulations)
-		fmt.Printf(value + ": %v\n", fractionAppeared)
-	}
+
+	winPercent := 100.0 * float64(winCount) / float64(numSimulations)
+	fmt.Printf("Won %v of %v games, %v%%", winCount, numSimulations, winPercent)
 }
 
 func makeDeck() []Card {
@@ -54,4 +54,9 @@ func shuffledDeck(originalDeck []Card) []Card {
 		copiedDeck[i], copiedDeck[j] = copiedDeck[j], copiedDeck[i]
 	})
 	return copiedDeck
+}
+
+func playPatience(deck []Card) bool {
+	lastCard := deck[len(deck)-1]
+	return lastCard.Value == "King"
 }
