@@ -20,14 +20,28 @@ var values [13]string = [13]string{"Ace", "Two", "Three", "Four", "Five", "Six",
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
+	
+	deck := makeDeck()
+	shuffled := shuffledDeck(deck)
+	
+	fmt.Println("First card is: ", shuffled[0])
+}
+
+func makeDeck() []Card {
 	deck := make([]Card, 0, 52)
 	for _, suit := range suits {
 		for _, value := range values {
 			deck = append(deck, Card{suit, value})
 		}
 	}
-	rand.Shuffle(len(deck), func(i, j int) {
-		deck[i], deck[j] = deck[j], deck[i]
+	return deck
+}
+
+func shuffledDeck(originalDeck []Card) []Card {
+	copiedDeck := make([]Card, len(originalDeck))
+	copy(copiedDeck, originalDeck)
+	rand.Shuffle(len(copiedDeck), func(i, j int) {
+		copiedDeck[i], copiedDeck[j] = copiedDeck[j], copiedDeck[i]
 	})
-	fmt.Println("First card is: ", deck[0])
+	return copiedDeck
 }
