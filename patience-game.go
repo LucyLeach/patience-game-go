@@ -20,15 +20,18 @@ var values [13]string = [13]string{"Ace", "Two", "Three", "Four", "Five", "Six",
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
-	numSimulations := 400000
+	numSimulations := 100000
 
 	deck := makeDeck()
 
+	c := make(chan bool)
+	for i := 0; i < numSimulations; i++ {
+		go playPatience(deck, c)
+	}
+
 	winCount := 0
 	for i := 0; i < numSimulations; i++ {
-		shuffled := shuffledDeck(deck)
-		win := playPatience(shuffled)
-		if win {
+		if <-c {
 			winCount++
 		}
 	}
@@ -56,28 +59,31 @@ func shuffledDeck(originalDeck []Card) []Card {
 	return copiedDeck
 }
 
-func playPatience(deck []Card) bool {
+func playPatience(orderedDeck []Card, c chan bool) {
+	deck := shuffledDeck(orderedDeck)
+
 	piles := make(map[string][]Card)
 	for i, value := range values {
-		piles[value] = deck[i*4: i*4 + 4]
+		piles[value] = deck[i*4 : i*4+4]
 	}
-	
+
 	currentCard := removeBottomCard(piles, "King")
 	for len(piles[currentCard.Value]) > 0 {
 		currentCard = removeBottomCard(piles, currentCard.Value)
 	}
-	
+
 	remainingCards := 0
 	for _, pile := range piles {
 		remainingCards += len(pile)
 	}
-	
-	return remainingCards == 0
+
+	c <- remainingCards == 0
+	return
 }
 
 func removeBottomCard(piles map[string][]Card, value string) Card {
 	currentPile := piles[value]
-	lastCard := currentPile[len(currentPile) - 1]
-	piles[value] = currentPile[:len(currentPile) - 1]
+	lastCard := currentPile[len(currentPile)-1]
+	piles[value] = currentPile[:len(currentPile)-1]
 	return lastCard
 }
