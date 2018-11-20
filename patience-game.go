@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
+	"runtime"
 	"time"
 )
 
@@ -20,20 +22,22 @@ var values [13]string = [13]string{"Ace", "Two", "Three", "Four", "Five", "Six",
 
 func main() {
 	rand.Seed(time.Now().UTC().UnixNano())
-	numSimulations := 100000
+	numSimulations := 10000000
+
+	numProcs := runtime.GOMAXPROCS(0)
+	//May result in a couple more or less than requested
+	numSimulationsPerRoutine := int(math.Round(float64(numSimulations) / float64(numProcs)))
 
 	deck := makeDeck()
 
-	c := make(chan bool)
-	for i := 0; i < numSimulations; i++ {
-		go playPatience(deck, c)
+	c := make(chan int)
+	for i := 0; i < numProcs; i++ {
+		go playNGamesOfPatience(deck, numSimulationsPerRoutine, c)
 	}
 
 	winCount := 0
-	for i := 0; i < numSimulations; i++ {
-		if <-c {
-			winCount++
-		}
+	for i := 0; i < numProcs; i++ {
+		winCount += <-c
 	}
 
 	winPercent := 100.0 * float64(winCount) / float64(numSimulations)
@@ -59,7 +63,17 @@ func shuffledDeck(originalDeck []Card) []Card {
 	return copiedDeck
 }
 
-func playPatience(orderedDeck []Card, c chan bool) {
+func playNGamesOfPatience(deck []Card, n int, c chan int) {
+	winCount := 0
+	for i := 0; i < n; i++ {
+		if playPatience(deck) {
+			winCount++
+		}
+	}
+	c <- winCount
+}
+
+func playPatience(orderedDeck []Card) bool {
 	deck := shuffledDeck(orderedDeck)
 
 	piles := make(map[string][]Card)
@@ -77,8 +91,7 @@ func playPatience(orderedDeck []Card, c chan bool) {
 		remainingCards += len(pile)
 	}
 
-	c <- remainingCards == 0
-	return
+	return remainingCards == 0
 }
 
 func removeBottomCard(piles map[string][]Card, value string) Card {
